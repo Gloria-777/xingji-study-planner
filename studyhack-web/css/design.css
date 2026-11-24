@@ -1,0 +1,88 @@
+/* 这一页自己的排版层，不参与散账：它不是产品界面的一部分。
+   但要守同一条纪律——只用令牌，不另编一套数。 */
+
+.dg {
+  min-height: 100vh;
+  padding: var(--sp-8) var(--sp-7) var(--sp-9);
+  color: var(--ink);
+  font-size: var(--fs-4);
+  line-height: 1.6;
+}
+
+.dg-head { max-width: 74ch; margin: 0 auto var(--sp-8); }
+.dg-title { margin: 0 0 var(--sp-3); font-size: var(--fs-9); font-weight: 700; letter-spacing: -0.2px; }
+.dg-lede { margin: 0 0 var(--sp-4); color: var(--ink-soft); }
+.dg-foot { max-width: 74ch; margin: var(--sp-8) auto 0; padding-top: var(--sp-5); border-top: 1px solid var(--hairline); color: var(--ink-dim); font-size: var(--fs-3); }
+
+.dg-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+  color: var(--ink-soft);
+  font-size: var(--fs-3);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--on-fill);
+  transition: background var(--t-lift) ease, color var(--t-lift) ease;
+}
+.dg-back:hover { background: var(--on-line); color: var(--ink); }
+.dg-back:focus-visible { outline: 2px solid var(--brand-edge); outline-offset: 2px; }
+
+.dg-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-2) var(--sp-5); margin: var(--sp-5) 0 0; font-size: var(--fs-2); }
+.dg-meta > div { display: flex; gap: var(--sp-2); }
+.dg-meta dt { color: var(--ink-dim); }
+.dg-meta dd { margin: 0; color: var(--ink-cool); font-variant-numeric: tabular-nums; }
+
+.dg-main { max-width: 74ch; margin: 0 auto; }
+.dg-sec { padding: var(--sp-7) 0; border-top: 1px solid var(--hairline); }
+.dg-sec > h2 { margin: 0 0 var(--sp-2); font-size: var(--fs-7); font-weight: 650; }
+.dg-note { margin: 0 0 var(--sp-6); color: var(--ink-dim); font-size: var(--fs-3); }
+.dg-demo { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: flex-start; }
+
+/* 令牌行：名字 / 样本 / 实时读数 / 用途 */
+.dg-rows { display: grid; gap: var(--sp-1); }
+.dg-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 15ch) 40px minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: var(--sp-4);
+  align-items: center;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-xs);
+}
+.dg-row:nth-child(odd) { background: var(--on-fill); }
+.dg-k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-2); color: var(--ink-cool); }
+.dg-v { font-size: var(--fs-2); color: var(--ink-soft); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.dg-use { font-size: var(--fs-2); color: var(--ink-dim); }
+.dg-chip { height: 24px; border-radius: var(--r-xs); border: 1px solid var(--line); background: var(--on-glass); }
+.dg-chip.bar { height: 10px; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
+.dg-chip.round { width: 40px; height: 40px; background: var(--brand-tint); border-color: var(--brand-line); }
+
+/* 字阶这一组：展示级（30–150px）塞不进样本列，裁成半个字看着像渲染坏了。
+   所以样本单独占一整行，读数与用途仍留在原位。 */
+.dg-spec-row { grid-template-columns: minmax(96px, 15ch) minmax(0, 1fr) minmax(0, 1.6fr); }
+.dg-spec { grid-column: 1 / -1; color: var(--ink); white-space: nowrap; overflow: hidden; }
+
+/* 控件原子：每个样本下面标真实读数 */
+.dg-cell { display: grid; gap: var(--sp-2); justify-items: start; padding: var(--sp-3); border: 1px solid var(--hairline); border-radius: var(--r-sm); background: var(--on-fill); }
+.dg-cell > figcaption { font-size: var(--fs-1); color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.dg-cell > .dg-name { font-size: var(--fs-2); color: var(--ink-soft); }
+
+.dg-stack { display: grid; gap: var(--sp-4); width: 100%; }
+.dg-card { width: 100%; }
+.dg-note-box { border: 1px solid var(--ok-line); background: var(--ok-tint); color: var(--ink-on-ok); border-radius: var(--r-sm); padding: var(--sp-4) var(--sp-5); font-size: var(--fs-3); }
+
+/* 星空分层的样本：色标全是令牌（--bg-0/--bg-1/--sky-end/--neb-*），
+   所以这一格在浅色档会自己变白——不是这里另写了一套数。 */
+.dg-sky { height: 88px; border-radius: var(--r-sm); border: 1px solid var(--line); background: linear-gradient(166deg, var(--brand-tint) 0%, var(--blue-tint) 52%, var(--on-fill) 100%); }
+.dg-depth { height: 88px; border-radius: var(--r-sm); border: 1px solid var(--line); background: radial-gradient(120px 88px at 50% 108%, var(--neb-c) 0%, rgba(0, 0, 0, 0) 70%), var(--bg-0); }
+
+@media (max-width: 720px) {
+  .dg { padding: var(--sp-6) var(--sp-5) var(--sp-8); }
+  .dg-row { grid-template-columns: minmax(72px, 11ch) 32px minmax(0, 1fr); }
+  .dg-spec-row { grid-template-columns: minmax(72px, 11ch) minmax(0, 1fr); }
+  .dg-use { grid-column: 1 / -1; color: var(--ink-dim); }
+  .dg-title { font-size: var(--fs-8); }
+}

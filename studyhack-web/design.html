@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="星迹的设计事实来源：令牌档位与组件原子的实时读数。这一页不参与产品功能，也不读写任何本机数据。">
+<meta name="theme-color" content="#0b0a1c">
+<meta name="robots" content="noindex">
+<title>设计事实来源 · 星迹</title>
+<script>
+// 这一页的主题只看地址：design.html?theme=light 就是浅色那一档，不带参数就是深色（产品的默认）。
+// 不读也不写 localStorage——产品的偏好存在哪儿是设置页那一档的事，参考页要的是「随便切来看一眼」。
+(function () {
+  try {
+    if (new URLSearchParams(location.search).get('theme') === 'light') document.documentElement.dataset.theme = 'light';
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/mobile.css">
+<link rel="stylesheet" href="css/desktop.css">
+<link rel="stylesheet" href="css/design.css">
+</head>
+<body class="dg">
+
+<header class="dg-head">
+  <a class="dg-back" href="index.html">回星迹</a>
+  <h1 class="dg-title">设计事实来源</h1>
+  <p class="dg-lede">
+    这一页不参与产品功能，只把界面自己的档位摊开看。左边是令牌名，右边是浏览器当场算出来的值——
+    不是抄下来的说明书，是这一屏、这个视口下的真读数。缩放窗口，字阶与专注大字那一档会跟着变。
+  </p>
+  <p class="dg-lede">
+    它不读也不写任何本机数据：不碰 IndexedDB，不碰 localStorage，不加载产品脚本。
+    组件原子直接引用产品样式表里的同一个类名，所以这里看到的按钮、卡片、格子就是产品里的那一个。
+  </p>
+  <p class="dg-lede">
+    当前这一档：<b id="dg-cur-theme">深色</b>。
+    <a href="design.html">看深色</a> · <a href="design.html?theme=light">看浅色</a>
+    ——切换只改地址上的参数，不改本机的外观偏好。
+  </p>
+  <dl class="dg-meta" id="dg-meta"></dl>
+</header>
+
+<main class="dg-main">
+  <section class="dg-sec" id="dg-type">
+    <h2>字阶</h2>
+    <p class="dg-note">十档整数正文阶 + 三档展示级 clamp。半像素一律向下取整档：缩小不会把窄屏撑出横向滚动，放大可能会。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-space">
+    <h2>间距阶</h2>
+    <p class="dg-note">4px 基准的十档。1px 的发丝间隙不算档位，它是分隔线本身。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-radius">
+    <h2>圆角</h2>
+    <p class="dg-note">按角色分档，不按就近取整：小控件、控件、卡片、胶囊、圆形。同一档的控件圆角必须一样，图标钮此前 9px 与 11px 两套数就是这么并掉的。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-color">
+    <h2>颜色</h2>
+    <p class="dg-note">底色与文字是一组，强调色按「真的被用到」留台阶：品牌五档，冷蓝两档，强调紫三档。凑满五档但没人用的空台阶会被页尾「没人引用」那一项抓出来删掉。星空分层、遮罩与手机外壳用的是另一组，见下面「分层、遮罩与外壳底色」。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-depth">
+    <h2>阴影</h2>
+    <p class="dg-note">五档：控件、手机端卡片、弹层与抽屉、手机端抽屉、宽屏课表块。第三档「无阴影」也是选择，不是遗漏。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-surface">
+    <h2>面与玻璃</h2>
+    <p class="dg-note">卡片面与「玻璃底」是两个角色：深色里它们恰好重合，浅色里必须分开（白底上没有玻璃可糊）。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-glow">
+    <h2>光晕与渐变端点</h2>
+    <p class="dg-note">主按钮与品牌标记的光晕、进度条与「现在」线的另一端、按压与悬停时渐变往哪边偏。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-landing">
+    <h2>文字落在什么底上</h2>
+    <p class="dg-note">同一句「白字」在深色里到处能用，在浅色里要看底：实底品牌色上还是白，淡底（tint）上必须换深字。所以这一组按「落在什么底上」命名，不按颜色命名。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-sky">
+    <h2>分层、遮罩与外壳底色</h2>
+    <p class="dg-note">深色那一套「天空」专用的量。浅色档换掉的就是这一组的值，规则的写法一行没动。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-theme">
+    <h2>浅色那一档换了哪些值</h2>
+    <p class="dg-note">第二套值不是第二套界面。</p>
+  </section>
+
+  <section class="dg-sec" id="dg-motion">
+    <h2>动效</h2>
+    <p class="dg-note">三档时长：按下去 120ms 要立刻有反应，抬起 200ms，进场 260ms。系统开了「减弱动效」时这里会写明实际生效的值。</p>
+    <div class="dg-demo" id="dg-motion-demo"></div>
+  </section>
+
+  <section class="dg-sec" id="dg-atoms">
+    <h2>控件原子</h2>
+    <p class="dg-note">每个控件下面标的是它当前真实的计算样式，不是设计稿标注。</p>
+    <div class="dg-demo" id="dg-atoms-demo"></div>
+  </section>
+
+  <section class="dg-sec" id="dg-surfaces">
+    <h2>真实组件样本</h2>
+    <div class="dg-demo" id="dg-surfaces-demo"></div>
+  </section>
+
+  <section class="dg-sec" id="dg-special">
+    <h2>正文里还允许出现的字面值</h2>
+    <div class="dg-demo" id="dg-special-demo"></div>
+  </section>
+</main>
+
+<footer class="dg-foot">
+  <p>
+    与产品同一套样式表：<code>css/styles.css</code>（令牌与基础组件）、<code>css/mobile.css</code>（≤900px 的手机版式）、
+    <code>css/desktop.css</code>（≥901px 的宽屏版式）。这一页自己只多一个 <code>css/design.css</code>，里面只允许出现排版用的类。
+  </p>
+</footer>
+
+<script type="module" src="js/design.js"></script>
+</body>
+</html>

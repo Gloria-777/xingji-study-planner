@@ -1,0 +1,554 @@
+/* 星迹 · 桌面版式层
+   只在宽屏（>900px）生效的一层增量样式：手机网页端与 App 端（≤900px）不加载这里的任何一条规则。
+   分成单独一份文件是为了让「这轮只改 html 端」这件事可以被机器核对
+   （node dev/style-baseline.mjs --diff 在 393 视口上必须 0 差异）。
+
+   参照的是这一类宽屏产品站的做法，不是把手机的一列拉宽：
+   - 侧栏给图标和分组，让 10 个入口在 232px 里被扫完，而不是一列纯文字；
+   - 筛选控件在宽屏排成一行，主操作靠右；
+   - 边框只留给需要说「这是一条状态」的东西，普通属性标签去掉描边；
+   - 数字一律等宽，时间、时长、条数在表格里能对齐成一列。 */
+
+@media (min-width: 901px) {
+  /* ---------- 外壳：顶栏一条分隔线，侧栏带图标与分组 ---------- */
+  .app {
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 0 var(--sp-9);
+    max-width: 1440px;
+    /* 底部给悬浮停靠栏让位：栏体约 88px + 离底距离，再叠水印避让带 */
+    padding: 0 calc(28px + var(--safe-r)) calc(110px + var(--safe-b) + var(--host-keep)) calc(28px + var(--safe-l));
+  }
+  .topbar {
+    padding: var(--sp-7) var(--sp-0) var(--sp-5);
+    margin-bottom: var(--sp-7);
+    border-bottom: 1px solid var(--hairline);
+    gap: var(--sp-5);
+  }
+  .brand-text b { font-size: var(--fs-6); letter-spacing: 0.2px; }
+  .brand-text small { font-size: var(--fs-2); letter-spacing: 0.1px; }
+
+  /* 状态胶囊在顶栏只是背景信息：收掉描边、压暗一档，把注意力让给正文 */
+  .chip { border-color: transparent; background: var(--on-fill); color: var(--ink-dim); }
+  .chip.on { border-color: transparent; background: var(--ok-tint); color: var(--ink-on-ok); }
+  .topbar-right .btn { padding: var(--sp-2) var(--sp-5); min-height: 34px; font-size: var(--fs-3); }
+
+  /* 侧栏收进一块玻璃面板：框用 inset 阴影画，不占边框盒——
+     滑块的 translate 按 #nav 边框盒量，占边框会让高亮块偏 1px */
+  .side {
+    top: 18px; gap: 1px; padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: var(--surface-card);
+    box-shadow: inset 0 0 0 1px var(--line);
+    backdrop-filter: var(--card-filter);
+    -webkit-backdrop-filter: var(--card-filter);
+  }
+  .side-ind {
+    display: block; position: absolute; top: 0; left: 0; z-index: 0;
+    border: 1px solid var(--brand-press); border-radius: var(--r-sm);
+    background: var(--brand-tint); pointer-events: none; opacity: 0;
+    transition: transform var(--t-in) var(--ease-out), width var(--t-in) var(--ease-out), height var(--t-in) var(--ease-out), opacity var(--t-lift) ease;
+  }
+  .side .nav-item { position: relative; z-index: 1; }
+  .side.side-ind-ready .nav-item[aria-current="page"] { background: transparent; border-color: transparent; animation: none; }
+  .side .nav-item:focus-visible { outline: 2px solid var(--brand-edge); outline-offset: -3px; }
+  /* 图标本来就在 DOM 里（手机底栏在用），桌面只是把它显示出来 */
+  .side .nav-ico {
+    display: grid;
+    place-items: center;
+    width: 26px; height: 26px;
+    border-radius: var(--r-xs);
+    color: var(--ink-dim);
+    position: relative;   /* 计数徽标的定位上下文 */
+    transition: background var(--t-lift) ease, color var(--t-lift) ease;
+  }
+  .side .nav-ico svg { width: 17px; height: 17px; }
+  /* 图标和文字同一行：基础样式里导航项是普通按钮，图标会掉到文字上方 */
+  .nav-item { display: flex; align-items: center; padding: var(--sp-2) var(--sp-4); min-height: 36px; gap: var(--sp-4); font-size: var(--fs-4); }
+  .nav-label { letter-spacing: 0.2px; }
+  /* 上面把导航项改成 flex，会连带把基础样式里「一律不出现」的「更多」也显示出来——它是手机底栏的溢出入口，宽屏十个入口一屏放得下 */
+  .nav-more { display: none; }
+  .nav-item[aria-current="page"] {
+    background: var(--brand-tint);
+    border-color: var(--brand-press);
+    color: var(--ink-on-tint);
+  }
+  .nav-item[aria-current="page"] .nav-ico { background: var(--brand-press); color: var(--ink-on-brand); }
+  /* 主四页（今日/AI 助手/课程表/任务）与分组区之间给一条真分隔线：这是分组信息，不是装饰 */
+  .nav-group:first-of-type {
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--hairline);
+  }
+
+  /* ---------- 侧栏分组：就地展开（手风琴），容器高度与后续栏目一起变化 ---------- */
+  .nav-group { display: block; }
+  .nav-group-head {
+    appearance: none; font: inherit; text-align: left;
+    display: flex; align-items: center; gap: var(--sp-4);
+    width: 100%; min-height: 36px;
+    padding: var(--sp-2) var(--sp-4);
+    border: 1px solid transparent; border-radius: var(--r-sm);
+    background: transparent; color: var(--ink-soft);
+    font-size: var(--fs-4); cursor: pointer;
+    transition: background var(--t-lift) ease, color var(--t-lift) ease, transform var(--t-press) var(--ease-out);
+  }
+  .nav-group-head:active, .nav-group-head.xj-press { background: var(--on-fill); transform: scale(0.985); transition-duration: 50ms; }
+  .nav-caret { margin-left: auto; display: inline-flex; color: var(--ink-dim); transition: transform var(--t-in) var(--ease-out); }
+  .nav-group.open .nav-caret { transform: rotate(180deg); }
+  /* 0fr→1fr 的网格轨道就是高度动画：不用 JS 量高度，后续栏目被自然推开 */
+  .nav-group-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--t-in) var(--ease-out); }
+  .nav-group.open .nav-group-body { grid-template-rows: 1fr; }
+  .nav-group.no-anim .nav-group-body { transition: none; }
+  .nav-group-inner { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 1px; }
+  .nav-group .nav-sub { min-height: 32px; padding-top: var(--sp-1); padding-bottom: var(--sp-1); padding-left: calc(var(--sp-4) + 26px + var(--sp-4)); font-size: var(--fs-3); }
+  /* 错峰只动子项的内容（图标+文字），按钮盒子本身不动：侧栏滑块量到的位置始终是落定的 */
+  .nav-group.open .nav-sub > * { animation: xj-sub-in var(--t-in) var(--ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
+  @keyframes xj-sub-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ---------- 底部悬浮停靠栏：图标按鼠标距离连续放大，顶部内边距就是预留的放大空间 ---------- */
+  .dock {
+    display: flex; align-items: flex-end; gap: var(--sp-2);
+    position: fixed; left: 50%; bottom: calc(var(--sp-4) + var(--safe-b) + var(--host-keep));
+    transform: translateX(-50%);
+    z-index: 50;
+    padding: calc(var(--sp-3) + 20px) var(--sp-4) var(--sp-3);
+    border: 1px solid var(--hairline); border-radius: var(--r-md);
+    background: linear-gradient(180deg, var(--chrome-c), var(--chrome-d));
+    backdrop-filter: var(--shell-filter);
+    -webkit-backdrop-filter: var(--shell-filter);
+    box-shadow: var(--shadow);
+  }
+  .dock-item {
+    appearance: none; font: inherit;
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; gap: var(--sp-1);
+    padding: var(--sp-1); border: 0; border-radius: var(--r-sm);
+    background: transparent; cursor: pointer;
+  }
+  .dock-item:focus-visible { outline: 2px solid var(--brand-edge); outline-offset: 2px; }
+  .dock-ico {
+    position: relative;
+    display: grid; place-items: center;
+    width: 40px; height: 40px;
+    border-radius: var(--r-sm);
+    background: var(--on-fill); color: var(--ink-soft);
+    transform: scale(var(--mag, 1)); transform-origin: bottom center;
+    transition: transform var(--t-lift) var(--ease-out), background var(--t-lift) ease, color var(--t-lift) ease;
+  }
+  /* 跟手期间关掉 transform 过渡：每一帧都是当前距离的真实大小；离开后接通过渡平滑收回 */
+  .dock.mag-live .dock-ico { transition: background var(--t-lift) ease, color var(--t-lift) ease; }
+  .dock-ico svg { width: 20px; height: 20px; }
+  .dock-item[aria-current="page"] .dock-ico { background: var(--brand-press); color: var(--ink-on-brand); }
+  .dock-dot { width: 4px; height: 4px; border-radius: var(--r-full); background: transparent; }
+  .dock-item[aria-current="page"] .dock-dot { background: var(--brand-edge); box-shadow: 0 0 6px var(--brand-line); }
+  .dock-name {
+    position: absolute; bottom: calc(100% + var(--sp-1)); left: 50%;
+    transform: translate(-50%, 4px); opacity: 0;
+    z-index: 3;
+    padding: var(--sp-0) var(--sp-3);
+    border: 1px solid var(--line); border-radius: var(--r-xs);
+    background: var(--panel-a); color: var(--ink);
+    font-size: var(--fs-1); white-space: nowrap;
+    pointer-events: none;
+    transition: opacity var(--t-lift) ease, transform var(--t-lift) var(--ease-out);
+  }
+  .dock-item:focus-visible .dock-name { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- 版式：标题靠字号与字距，不靠渐变 ---------- */
+  body { font-variant-numeric: tabular-nums; }
+  .page-head { margin: var(--sp-0) 0 var(--sp-7); }
+  .page-title { font-size: var(--fs-9); font-weight: 650; letter-spacing: -0.2px; line-height: 1.25; }
+  .page-head .page-title {
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: var(--ink);
+  }
+  .page-sub { font-size: var(--fs-4); line-height: 1.7; max-width: 68ch; margin-top: var(--sp-2); }
+
+  /* 宽屏上卡片原来只有 5% 白的玻璃底，压在星空上几乎看不见框——内容全混在一起。
+     这里把手机层那套「渐变玻璃底 + 一档阴影」接过来，描边提到 --line，
+     顶缘再加一道内高光：每块内容有自己的框，框外才是天。 */
+  .card {
+    padding: var(--sp-6) var(--sp-7); margin-bottom: var(--sp-6);
+    border-color: var(--line);
+    background-color: var(--surface-card);
+    background-image: linear-gradient(180deg, var(--card-fill-a), var(--card-fill-b));
+    box-shadow: var(--shadow-md), inset 0 1px 0 var(--on-hair);
+  }
+  /* 浅色档那道顶缘内高光压在白卡上几乎看不见，是一道无效高光：
+     撤掉它，框交给提过档的描边与蓝灰阴影，白卡在天蓝底上自己就浮得起来。 */
+  :root[data-theme="light"] .card { box-shadow: var(--shadow-md); }
+  /* 首屏重音卡保留手机层那块品牌色：整页只有它带颜色，其余卡片安静 */
+  .card-hero {
+    border-color: var(--brand-press);
+    background-image:
+      radial-gradient(420px 200px at 88% -20%, var(--neb-hi) 0%, rgba(0, 0, 0, 0) 66%),
+      linear-gradient(166deg, var(--brand-tint) 0%, var(--blue-tint) 52%, var(--card-fill-b) 100%);
+  }
+  .card > h3:first-child { font-size: var(--fs-5); letter-spacing: 0.2px; }
+  /* 带列表的卡片才给标题一条下分隔线：小卡片不留空框 */
+  .card:has(.row) > h3:first-child,
+  .card:has(.tt-grid) > h3:first-child {
+    padding-bottom: var(--sp-4);
+    margin-bottom: var(--sp-5);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .grid { gap: var(--sp-6); margin-bottom: var(--sp-6); align-items: start; }
+  .grid-auto { grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); }
+
+  /* 专注页：计时器占主列，当天的记录放右列。这一页只有两张卡片，整页拉宽会变成一个悬在中间的大数字。 */
+  .view[data-page="focus"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 0 var(--sp-8);
+    align-content: start;
+    align-items: start;
+  }
+  .view[data-page="focus"] > .page-head { grid-column: 1 / -1; }
+  .view[data-page="focus"] > .card { margin-bottom: 0; }
+
+  /* ---------- 今日工作台：宽屏不把手机的 3 列宫格撑成大空盒 ---------- */
+  /* 六个入口收进一个框里成一条快捷条：外框负责「这是一组」，格子自己的描边去掉，
+     悬停/按下/当前页仍由基础样式的状态档点亮 */
+  .home-dock {
+    padding: var(--sp-2);
+    border-radius: var(--r-md);
+    background: var(--surface-card);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .home-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .home-tile { flex-direction: row; justify-content: center; gap: var(--sp-2); padding: var(--sp-3) var(--sp-2); border-color: transparent; background: transparent; }
+  .today-actions > .today-step {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-6);
+  }
+  .today-step-context { min-width: 0; }
+  .today-step .today-step-actions { margin: 0; }
+  .today-step > .plan-details { flex-basis: 100%; }
+  .today-actions > .recovery-entry { justify-content: flex-start; gap: var(--sp-4); }
+  .today-overview-rows { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .today-overview-rows > .row {
+    flex: 1 1 14rem;
+    min-width: 0;
+    padding: var(--sp-4);
+    border: 0;
+    border-radius: var(--r-xs);
+    background: var(--on-fill);
+  }
+  .today-overview-rows .row-title { overflow-wrap: anywhere; }
+  .today-overview-rows + .hint { margin-top: var(--sp-4); }
+  .view[data-page="tasks"] > .card { max-width: none; }
+  .view[data-page="tasks"] .bar-row { max-width: 25rem; }
+  .view[data-page="planner"] > .planner-controls,
+  .view[data-page="planner"] > .planner-preview,
+  .view[data-page="planner"] > .saved-plans { max-width: 65rem; }
+
+  .reminder-status-rows, .reminder-settings-fields { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .reminder-status-rows > .kv {
+    flex: 1 1 14rem;
+    min-width: 0;
+    display: grid;
+    align-content: start;
+    gap: var(--sp-1);
+    padding: var(--sp-3) var(--sp-4);
+    border: 0;
+    border-radius: var(--r-xs);
+    background: var(--on-fill);
+  }
+  .reminder-status-rows > .kv span { text-align: start; overflow-wrap: anywhere; }
+  .reminder-settings-fields { column-gap: var(--sp-6); }
+  .reminder-setting-group { flex: 1 1 15rem; min-width: 0; }
+  .reminder-setting-group .field-row { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); gap: var(--sp-3); }
+  .reminder-setting-group .field { margin-bottom: var(--sp-3); }
+
+  /* ---------- AI 对话：占满主栏，消息在面板内滚动 ---------- */
+  .app:has(> .view[data-page="assistants"]) {
+    height: 100dvh; min-height: 560px;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .app:has(> .view[data-page="assistants"]):not(:has(> .dock)) {
+    padding-bottom: calc(var(--sp-8) + var(--safe-b) + var(--host-keep, 0px));
+  }
+  .view[data-page="assistants"] { display: flex; flex-direction: column; min-height: 0; padding-bottom: 0; }
+  .app:has(> .view[data-page="assistants"]) ~ .toast-stack {
+    bottom: calc(8rem + var(--safe-b) + var(--host-keep, 0px));
+  }
+  .view[data-page="assistants"] .chat-screen {
+    flex: 1 1 auto; width: 100%; height: auto; min-height: 350px;
+    padding: var(--sp-5) var(--sp-6);
+    border: 1px solid var(--line); border-radius: var(--r-md);
+    background-color: var(--surface-card);
+    background-image: linear-gradient(180deg, var(--card-fill-a), var(--card-fill-b));
+    box-shadow: var(--shadow-md), inset 0 1px 0 var(--on-hair);
+  }
+  /* 头/输入条各一条分隔线：对话区、身份区、输入区三段分明 */
+  .view[data-page="assistants"] .chat-head {
+    padding-bottom: var(--sp-4); margin-bottom: var(--sp-4);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .view[data-page="assistants"] .chat-bottom {
+    padding-top: var(--sp-4); margin-top: var(--sp-4);
+    border-top: 1px solid var(--hairline);
+  }
+  .chat-empty {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(20px, 3vw, 48px);
+    width: 100%; max-width: 640px;
+    margin: auto;
+    padding: var(--sp-5) clamp(8px, 2vw, 28px);
+  }
+  .chat-welcome > h2 { display: block; margin: 0 0 var(--sp-3); font-size: var(--fs-8); line-height: 1.3; }
+  .chat-welcome > p { max-width: 36ch; line-height: 1.7; }
+  /* 浅色对话以整条底色区分工具栏、会话和输入区，空态欢迎语保持居中。 */
+  :root[data-theme="light"] .view[data-page="assistants"] {
+    --chat-zone-line: #b6c3dc;
+    --chat-chrome: #dfe7f6;
+    --chat-canvas: #edf2fa;
+    --chat-guide: #e1e5f9;
+    --chat-control: #f8faff;
+    --chat-selected: #46428e;
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-screen {
+    padding: 0;
+    overflow: hidden;
+    border-color: var(--chat-zone-line);
+    background: var(--chat-canvas);
+    box-shadow: var(--shadow-md);
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-head,
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-bottom {
+    flex-shrink: 0;
+    padding: var(--sp-4) var(--sp-6);
+    margin: 0;
+    border-color: var(--chat-zone-line);
+    background: var(--chat-chrome);
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-agent,
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-head > .icon-btn {
+    border-color: var(--chat-zone-line);
+    background: var(--chat-control);
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-agent[aria-pressed="true"] {
+    border-color: var(--chat-selected);
+    background: var(--chat-selected);
+    color: var(--ink-on-solid);
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-screen > .thread {
+    padding: var(--sp-4) var(--sp-6);
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-screen > .err { margin: var(--sp-4) var(--sp-6) 0; }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-empty {
+    align-items: stretch;
+    gap: var(--sp-4);
+    max-width: 640px;
+    padding: var(--sp-2) 0;
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-welcome {
+    padding: clamp(12px, 1.8vw, 24px);
+    border: 1px solid var(--chat-zone-line);
+    border-radius: var(--r-sm);
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-welcome {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--chat-guide);
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-welcome > p:last-child { margin-bottom: 0; }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-composer { margin: 0; }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-input {
+    border-color: var(--chat-zone-line);
+    background: var(--chat-control);
+  }
+  :root[data-theme="light"] .view[data-page="assistants"] .chat-input:focus-within { border-color: var(--brand-edge); }
+
+  .view[data-page="assistants"] .chat-screen.chat-new { flex: 1 1 auto; min-height: 0; }
+  .view[data-page="assistants"] .chat-new > .thread { justify-content: center; }
+  /* ---------- 组件层级：边框只留给状态 ---------- */
+  .tag { border-color: transparent; background: var(--on-fill); padding: 1px var(--sp-3); }
+  /* 有含义的那几档（优先/完成/超时/风险）保留描边，一眼能和普通属性分开 */
+  .tag.p-high { border-color: var(--accent-line); }
+  .tag.ok { border-color: var(--ok-line); }
+  .tag.warn { border-color: var(--warn-line); }
+  .tag.bad { border-color: var(--danger-line); }
+
+  /* 筛选行：宽屏不该让三个控件各占一整行 */
+  .btn-row { align-items: center; }
+  .btn-row > select,
+  .btn-row > input[type="search"],
+  .btn-row > input[type="text"] {
+    width: auto;
+    flex: 0 1 auto;
+    min-width: 148px;
+  }
+  .btn-row > input[type="search"] { flex: 1 1 220px; min-width: 200px; }
+
+  /* 单个控件不该横跨整页：给一个可读的宽度上限（弹层里的表单在 .view 之外，不受这条影响） */
+  .view .field { max-width: 560px; }
+
+  /* 列表行：一行读完，操作靠右且分主次 */
+  .row { padding: var(--sp-5) 0; gap: var(--sp-5); }
+  .row-meta { gap: var(--sp-4) var(--sp-5); }
+  /* 进度条那一行不再在这层单独处理：根因（.bar-row 被 .row-meta 这个 flex 容器按 min-content 定宽，
+     中间 1fr 轨道塌成 0）已在 css/styles.css 的 .row-meta > .bar-row 修掉，三端一起生效。 */
+  .row-ops { flex-wrap: nowrap; gap: var(--sp-0); }
+  /* 窄列里按钮被挤成竖排（「去看」两字一行一个字），操作区先保住自己的宽度 */
+  .row-ops .btn { white-space: nowrap; flex: 0 0 auto; }
+
+  /* 课表：块与块之间靠留白和阴影分层，不再靠一圈白边 */
+  .tt-course { border-color: var(--on-press); box-shadow: var(--shadow-chip); }
+  .tt-course b { font-size: var(--fs-2); }
+  .tt-grid { border-radius: var(--r-sm); }
+  .tt-day-meta, .tt-day-count { display: inline; }
+  .tt-day-count { margin-inline-start: var(--sp-2); color: var(--ink-dim); font-size: var(--fs-1); }
+
+  /* 弹层在宽屏放宽一点，长表单（课程、提醒、须知）不用来回滚 */
+  .sheet { width: min(640px, 100%); }
+  .sheet.wide { width: min(940px, 100%); }
+  .sheet h3 { font-size: var(--fs-7); letter-spacing: 0.2px; }
+}
+
+/* 今日页的非对称分栏要等窄列还剩至少一条任务的空间才成立：
+   1000px 那一档实测右列被压到任务标题折成五行，所以 901–1179 之间保持等宽两列。 */
+@media (min-width: 1180px) {
+  .view[data-page="today"] .grid-2 { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+}
+
+/* 悬停只在真有指针的设备上给：平板触屏（宽屏但用手指）不该留下粘住的高亮 */
+@media (min-width: 901px) and (hover: hover) {
+  .side .nav-item:hover { color: var(--ink); background: var(--on-fill); }
+  .nav-item:hover .nav-ico { color: var(--ink-soft); }
+  .side .nav-group-head:hover { color: var(--ink); background: var(--on-fill); }
+  .dock-item:hover .dock-ico { background: var(--on-hair); color: var(--ink); }
+  .dock-item:hover .dock-name { opacity: 1; transform: translate(-50%, 0); }
+  /* 「淡成 60%、缩到 32px、悬停才点亮」这套只在有指针时才成立。
+     原来它挂在宽屏那一档里，1024px 的触屏平板就拿到一组 32px、60% 透明、永远不会亮起来的按钮。 */
+  .row-ops .icon-btn {
+    width: 32px; height: 32px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink-dim);
+    opacity: 0.6;
+  }
+  .row-ops .icon-btn:focus-visible { opacity: 1; }
+  .row:hover .row-ops .icon-btn { opacity: 0.9; }
+  .row-ops .icon-btn:hover { opacity: 1; background: var(--on-hair); color: var(--ink); }
+  .home-tile:hover { background: var(--on-fill); }
+}
+
+/* ---------- 活的天幕：星云缓慢漂移呼吸（仅宽屏深色档） ----------
+   星点的闪烁/视差/流星在 js/app.js 的桌面档里画；这一层是星点背后那片会呼吸的星云。
+   只动 transform 与 opacity（合成器属性），56s 一个来回，不触发重排重绘。
+   浅色档不出场（白底上不需要深空辉光）；减弱动效时下面一条把它停成静态星云。 */
+@media (min-width: 901px) {
+  :root:not([data-theme="light"]) body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(46% 38% at 72% 22%, var(--neb-a) 0%, rgba(0, 0, 0, 0) 70%),
+      radial-gradient(40% 34% at 22% 68%, var(--neb-b) 0%, rgba(0, 0, 0, 0) 72%);
+    animation: xj-aurora 56s ease-in-out infinite alternate;
+  }
+  @keyframes xj-aurora {
+    from { transform: translate3d(-1.5%, -1%, 0) scale(1); opacity: 0.7; }
+    to { transform: translate3d(1.5%, 1.5%, 0) scale(1.08); opacity: 1; }
+  }
+}
+@media (min-width: 901px) and (prefers-reduced-motion: reduce) {
+  :root:not([data-theme="light"]) body::after { animation: none; }
+}
+
+/* ---------- 内容少的页：把宽度用起来（≥901 专注页撑高，≥1240 右侧补充栏） ---------- */
+@media (min-width: 901px) {
+  /* 记录栏随内容排布，说明紧跟记录，避免被计时器强行撑开。 */
+  .view[data-page="focus"] { align-items: start; }
+  .view[data-page="focus"] > .card-timer { display: flex; flex-direction: column; min-height: min(600px, calc(100vh - 340px)); }
+  .view[data-page="focus"] > .card:not(.card-timer) { display: flex; flex-direction: column; }
+  .focus-notes { margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--hairline); }
+  .focus-notes h4 { margin: 0 0 var(--sp-2); font-size: var(--fs-3); font-weight: 600; color: var(--ink-dim); }
+  .aside-list { margin: 0; padding-left: var(--sp-7); color: var(--ink-soft); font-size: var(--fs-3); line-height: 1.75; }
+  .aside-list li { margin-bottom: var(--sp-2); }
+  /* 目标页场景包：宽屏下本来是无样式的裸按钮，图标、标题和说明挤成一行。
+     这里给它们平铺成两列可点卡片，和手机端的宫格是同一件事。 */
+  .more-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); margin-top: var(--sp-2); }
+  .more-grid .more-item {
+    appearance: none;
+    font: inherit;
+    text-align: left;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: var(--sp-4);
+    row-gap: var(--sp-0);
+    align-items: center;
+    padding: var(--sp-4) var(--sp-5);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--surface-card);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background var(--t-lift) ease, border-color var(--t-lift) ease;
+  }
+  .more-grid .more-item:hover { background: var(--on-fill); }
+  .more-grid .more-item:active { background: var(--on-line); }
+  .more-grid .more-ico { grid-row: 1 / 3; color: var(--ink-cool); }
+  .more-grid .more-item b { font-size: var(--fs-4); font-weight: 600; }
+  .more-grid .more-item small { color: var(--ink-dim); font-size: var(--fs-2); line-height: 1.5; }
+
+  .review-overview.grid { display: flex; flex-wrap: wrap; gap: var(--sp-5); }
+  .review-overview > .card { flex: 1 1 24rem; min-width: 0; margin-bottom: 0; }
+  .app:has(> .view:is([data-page="tasks"], [data-page="timetable"])) {
+    height: 100dvh;
+    min-height: 560px;
+    grid-template-rows: auto minmax(0, 1fr);
+    padding-bottom: calc(var(--sp-6) + var(--safe-b) + var(--host-keep, 0px));
+  }
+  .app:has(> .dock):has(> .view:is([data-page="tasks"], [data-page="timetable"])) { padding-bottom: calc(110px + var(--safe-b) + var(--host-keep, 0px)); }
+  .view:is([data-page="tasks"], [data-page="timetable"]) { display: flex; flex-direction: column; min-height: 0; padding-bottom: 0; }
+  .view:is([data-page="tasks"], [data-page="timetable"]) > .page-head { flex: 0 0 auto; }
+  .task-workspace, .tt-desktop-card { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; margin-bottom: 0; }
+  .task-workspace > :not(.task-list), .tt-desktop-card > :not(.tt-body) { flex: 0 0 auto; }
+  .task-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .task-list-empty { align-content: center; }
+  .task-empty-content { padding: var(--sp-6); max-width: 36rem; align-self: center; justify-self: center; text-align: center; }
+  .tt-desktop-card > .tt-body, .tt-body > div { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  .tt-desktop-card .tt-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .tt-desktop-card .tt-grid { min-height: 100%; }
+  .tt-desktop-card .tt-settings { max-height: 40%; overflow-y: auto; }
+  .review-trends.card { padding: 0; border: 0; background: none; box-shadow: none; }
+}
+
+@media (min-width: 1240px) {
+  .page-aside { display: none; }
+  #view[data-page="goals"],
+  #view[data-page="settings"] { position: relative; padding-right: calc(var(--rail-w) + var(--sp-6)); }
+  #view[data-page="goals"] .page-aside,
+  #view[data-page="settings"] .page-aside {
+    display: grid; gap: var(--sp-4); align-content: start;
+    position: absolute; top: 0; right: 0; width: var(--rail-w);
+  }
+  .page-aside .card { margin: 0; }
+  .aside-facts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3); }
+  .aside-fact { display: grid; gap: var(--sp-0); }
+  .aside-fact span { color: var(--ink-dim); font-size: var(--fs-2); }
+  .aside-fact b { font-size: var(--fs-4); font-variant-numeric: tabular-nums; }
+}
+
+@media (min-width: 901px) {
+  .desk-only { display: block; }
+}
+
+@media (min-width: 1100px) {
+  .chat-welcome > h2 { font-size: var(--fs-9); }
+}

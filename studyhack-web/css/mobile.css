@@ -1,0 +1,726 @@
+/* 手机端版式（≤900px）：手机网页与 App 共用这一份。
+   目标不是把桌面缩小，而是按拇指区、首屏和触摸尺寸重排：
+   应用栏只留「页面名 + 一颗状态」，主导航落到底部五个标签，编辑类弹层改成底部抽屉，
+   说明性长段落默认折两行。桌面版式（css/styles.css）不受这里影响。 */
+
+.sub-more { display: none; }
+
+@media (max-width: 900px) {
+  :root {
+    --pad-x: 16px;
+    --appbar-h: 48px;
+    --tabbar-h: 58px;
+    --axis-h: 46px;
+  }
+
+  html, body { font-size: var(--fs-5); }
+
+  /* 托管页脚水印占掉的那一条带（js/app.js 量出来的，本地与 App 恒为 0）。
+     底栏、抽屉、须知弹层都贴着视口底边，水印也贴着底边，两边都要能点到，所以只能错开。 */
+  :root { --host-keep: 0px; }
+
+  /* ---------- 外壳：应用栏 + 正文 + 底部标签栏 ---------- */
+  .app {
+    display: block;
+    max-width: none;
+    padding: 0 0 calc(var(--tabbar-h) + var(--safe-b) + 20px + var(--host-keep));
+    /* 换页那 260ms 整页是横向滑进来的，溢出的那 16px 会把手机的布局视口顶宽十几像素：
+       底栏五格会先变宽再缩回来、滑块定位跟着偏。clip 只裁横向溢出，
+       不生成滚动容器（sticky 应用栏照旧）、也不裁 fixed 的底栏。 */
+    overflow-x: clip;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    flex-wrap: nowrap;
+    margin: 0;
+    padding: calc(6px + var(--safe-t)) calc(var(--pad-x) + var(--safe-r)) 6px calc(var(--pad-x) + var(--safe-l));
+    min-height: calc(var(--appbar-h) + var(--safe-t));
+    background: linear-gradient(180deg, var(--chrome-a) 0%, var(--chrome-b) 100%);
+    backdrop-filter: var(--shell-filter);
+    -webkit-backdrop-filter: var(--shell-filter);
+    border-bottom: 1px solid var(--hairline);
+  }
+  /* 桌面顶栏那一支在手机上整块藏掉。原来这条还顺手把 .chip 组件本身也关了，
+     于是任何一处用 .chip 的地方在手机上会静悄悄消失（参考页的胶囊样本就是这么看不见的）：
+     .topbar-right 已经整块 display:none，这里不该再管组件。 */
+  .brand, .topbar-right { display: none; }
+
+  .appbar-title {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: var(--fs-7);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ink);
+  }
+
+  .appbar-status {
+    appearance: none;
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: var(--sp-1) var(--sp-4) var(--sp-1) var(--sp-3);
+    border-radius: var(--r-pill);
+    border: 1px solid var(--hairline);
+    background: var(--on-hair);
+    color: var(--ink-soft);
+    font-size: var(--fs-2);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .appbar-status-dot {
+    width: 7px; height: 7px;
+    flex: 0 0 auto;
+    border-radius: var(--r-full);
+    background: var(--ink-dim);
+  }
+  .appbar-status.on { color: var(--ink-on-ok); border-color: var(--ok-line); }
+  .appbar-status.on .appbar-status-dot { background: var(--ok); box-shadow: 0 0 8px var(--ok-strong); }
+  .appbar-status.off .appbar-status-dot { background: var(--danger); }
+
+  .view {
+    padding: var(--sp-6) calc(var(--pad-x) + var(--safe-r)) 0 calc(var(--pad-x) + var(--safe-l));
+  }
+
+  .side {
+    /* styles.css 给侧栏留了 top:14px；fixed 下 top 和 bottom 同时存在时 top 赢，标签栏会贴到顶上 */
+    position: fixed;
+    top: auto;
+    left: 0; right: 0; bottom: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    overflow: visible;
+    padding: 4px var(--safe-r) calc(4px + var(--safe-b) + var(--host-keep)) var(--safe-l);
+    background: linear-gradient(180deg, var(--chrome-c) 0%, var(--chrome-d) 100%);
+    backdrop-filter: var(--shell-filter);
+    -webkit-backdrop-filter: var(--shell-filter);
+    border-top: 1px solid var(--hairline);
+  }
+  .nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    min-height: var(--tabbar-h);
+    padding: var(--sp-1) var(--sp-0);
+    border-radius: var(--r-sm);
+    font-size: var(--fs-2);
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+  /* 收进「更多」抽屉的页面：写在 .nav-item 之后，同权重才压得住上面的 display:flex */
+  .side .nav-sub { display: none; }
+  .side .nav-more { display: flex; }
+  .nav-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px; height: 25px;
+    border-radius: var(--r-pill);
+    color: var(--ink-dim);
+    position: relative;
+    z-index: 1;
+    transition: background var(--t-lift) ease, color var(--t-lift) ease, transform var(--t-press) var(--ease-out);
+  }
+  .nav-ico svg { width: 19px; height: 19px; }
+  .nav-label { overflow: hidden; text-overflow: ellipsis; }
+  /* 五个标签并排，整条缩放会跟着邻居抖：按压只作用在图标那颗托上 */
+  .side .nav-item:active, .side .nav-item.xj-press { background: transparent; transform: none; }
+  .side .nav-item:active .nav-ico, .side .nav-item.xj-press .nav-ico { background: var(--on-press); transform: scale(0.86); transition-duration: 50ms; }
+  /* 选中态只用「滑块走到那一格 + 白字」：光片由 .tab-ind 负责，图标托自己不再各涂一块底色 */
+  .side .nav-item[aria-current="page"] {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: var(--ink-on-tint);
+    font-weight: 600;
+    animation: none;
+  }
+  .side .nav-item[aria-current="page"] .nav-ico {
+    color: var(--ink-on-tint);
+    background: transparent;
+    animation: xj-tab-in var(--t-in) var(--ease-out);
+  }
+  @keyframes xj-tab-in {
+    from { transform: scale(0.84); filter: brightness(1.35); }
+    to { transform: none; filter: none; }
+  }
+
+  /* 底栏滑块：一块跟着当前标签走的光片，换页时它是滑过去的，不是瞬移的。
+     DOM 由 js/app.js 建在 #nav 里；宽屏由 styles.css 兜底隐藏（它是手机端外壳的元素）。
+     位置只靠 --tx / --ty 两个偏移量，markNav() 每次换页写一次；负 z-index 让它待在图标下面。 */
+  .tab-ind {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40px;
+    height: 28px;
+    border-radius: var(--r-pill);
+    background: linear-gradient(120deg, var(--brand-edge), var(--blue-press));
+    box-shadow: 0 0 16px var(--brand-line);
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+    /* --tx/--ty 是相对 #nav 边框盒的偏移，js 里按「光片中心对齐图标托中心」算；
+       宽高也由 js 按目标图标托写（尺寸跟随），这里只兜底首帧 */
+    transform: translate(var(--tx, 0px), var(--ty, 0px));
+    transition: transform var(--t-in) var(--ease-out), opacity var(--t-lift) ease, width var(--t-in) var(--ease-out), height var(--t-in) var(--ease-out);
+  }
+
+  /* 应用栏只有一行标题：换页时让它自己淡一次，否则「页面切没切」全凭内容变化 */
+  .appbar-title.xj-swap { animation: xj-swap var(--t-in) var(--ease-out); }
+  @keyframes xj-swap {
+    from { opacity: 0.2; transform: translateY(-3px); }
+    to { opacity: 1; transform: none; }
+  }
+  .appbar-status { transition: background var(--t-lift) ease, border-color var(--t-lift) ease, transform var(--t-press) var(--ease-out); }
+  .appbar-status:active, .appbar-status.xj-press { background: var(--on-press); transform: scale(0.95); transition-duration: 50ms; }
+
+  /* 应用栏上的命令面板入口：手机上没有 Ctrl+K，搜索靠这颗可点的键 */
+  .appbar-cmd, .appbar-theme {
+    appearance: none;
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 32px;
+    min-width: 36px;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--r-pill);
+    border: 1px solid var(--hairline);
+    background: var(--on-hair);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: background var(--t-lift) ease, transform var(--t-press) var(--ease-out);
+  }
+  .appbar-cmd:active, .appbar-cmd.xj-press, .appbar-theme:active, .appbar-theme.xj-press { background: var(--on-press); transform: scale(0.95); transition-duration: 50ms; }
+
+  /* 换页带方向：底栏五个标签是一条有序的路（今日 → AI → 课表 → 任务 → 更多），
+     往右翻就从右边进来、往回翻从左边进来，回答「我刚去了哪」比整页淡一下更准。
+     类由 js/app.js 按 PAGES 的顺序判断，只有用户主动换页才挂 xj-enter。 */
+  .view.xj-enter.xj-fwd { animation-name: xj-view-fwd; }
+  .view.xj-enter.xj-back { animation-name: xj-view-back; }
+  @keyframes xj-view-fwd { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+  @keyframes xj-view-back { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+
+  /* 换页那一次，列表行按顺序错峰进来（叠到 6 行以后封顶，长列表不用让人等）。
+     同样只跟着 .xj-enter：写库后的重绘不带这个类，不会每确认一条建议整页闪一遍。 */
+  .view.xj-enter .card .row { animation: xj-row-in var(--t-in) var(--ease-out) backwards; }
+  @keyframes xj-row-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+  .view.xj-enter .card .row:nth-child(2) { animation-delay: 40ms; }
+  .view.xj-enter .card .row:nth-child(3) { animation-delay: 80ms; }
+  .view.xj-enter .card .row:nth-child(4) { animation-delay: 110ms; }
+  .view.xj-enter .card .row:nth-child(5) { animation-delay: 140ms; }
+  .view.xj-enter .card .row:nth-child(n+6) { animation-delay: 160ms; }
+
+  /* ---------- 页头：重复的大标题让给应用栏，长说明折两行 ---------- */
+  .page-head { margin: var(--sp-3) 0 var(--sp-6); }
+  .view:not([data-page="today"]) .page-title { display: none; }
+  .page-title { font-size: var(--fs-title); margin-bottom: var(--sp-0); }
+  .page-sub { margin: 0; font-size: var(--fs-3); }
+  .page-head.clamped .page-sub:not(.open) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .page-head.clamped .sub-more {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    appearance: none;
+    font: inherit;
+    font-size: var(--fs-2);
+    margin-top: var(--sp-1);
+    padding: var(--sp-0) 0;
+    background: none;
+    border: 0;
+    color: var(--ink-cool);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: opacity var(--t-lift) ease, transform var(--t-press) var(--ease-out);
+  }
+  .page-head.clamped .sub-more:active, .page-head.clamped .sub-more.xj-press { opacity: 0.6; transform: scale(0.97); transition-duration: 50ms; }
+
+  /* ---------- 卡片与列表 ---------- */
+  .card {
+    padding: var(--sp-6) var(--sp-6);
+    margin-bottom: var(--sp-6);
+    border-radius: var(--r-md);
+    border-color: var(--hairline);
+    background: linear-gradient(166deg, var(--card-fill-a) 0%, var(--card-fill-b) 100%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: var(--shadow-md);
+  }
+  .card > h3:first-child { font-size: var(--fs-6); margin-bottom: var(--sp-4); }
+  /* 浅色天蓝底比深空底亮得多：手机卡框在浅色里提到桌面同一档描边，深色保持原样；
+     重音卡与引导卡各有自己的紫边，不被这条盖掉 */
+  :root[data-theme="light"] .card:not(.card-hero):not(.guide-card) { border-color: var(--line); }
+  .grid { gap: var(--sp-6); margin-bottom: var(--sp-6); }
+
+  /* 今日首屏的重音：只有这一块带颜色，其余卡片保持安静 */
+  .card-hero {
+    border-color: var(--brand-press);
+    background:
+      radial-gradient(420px 200px at 88% -20%, var(--neb-hi) 0%, rgba(0, 0, 0, 0) 66%),
+      linear-gradient(166deg, var(--brand-tint) 0%, var(--blue-tint) 52%, var(--card-fill-b) 100%);
+    padding-bottom: 0;
+  }
+  .card-hero .row { border-bottom: 0; }
+  .card-hero .row-title { font-size: var(--fs-7); }
+  /* 动作区首屏全见：放不下就折行，不靠横滑去发现第二个键（渐隐提示也一并撤掉） */
+  .card-hero .btn-row {
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin: var(--sp-6) calc(-1 * var(--pad-x)) 0;
+    padding: var(--sp-4) var(--sp-6) var(--sp-5);
+    border-top: 1px solid var(--hairline);
+  }
+  .card-hero .btn-row .btn { flex: 1 1 auto; justify-content: center; }
+  .today-step .row-title.today-step-name { font-size: var(--fs-title); }
+  .today-step .today-step-actions .btn-primary { flex: 1 1 156px; }
+  .today-step .today-step-actions .btn-ghost { flex: 0 0 auto; }
+  .today-demo .btn-row .btn { flex-basis: 100%; }
+
+  .row { padding: var(--sp-5) 0; align-items: flex-start; }
+  .row-title { font-size: var(--fs-5); }
+  .row-meta { font-size: var(--fs-3); gap: var(--sp-3); }
+  /* 操作键固定右侧两列：不定宽的话同一页里会出现 1 列 4 行、2 列 2 行，每行形状都不一样 */
+  .row-ops {
+    width: auto;
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    justify-content: end;
+    gap: var(--sp-2);
+  }
+  /* 任务页行：即使只有两个图标钮（完成 / 更多），正文也占满一行，
+     操作落右侧第二行——任务名是这一行最该完整读到的内容。 */
+  .view[data-page="tasks"] .row { flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); }
+  .view[data-page="tasks"] .row-main { flex: 1 1 100%; }
+  /* 两个操作键落在标题行下方、靠右：44px 点击区保留，视觉上退成描边小键，
+     不再是一排比标题还重的灰方块 */
+  .view[data-page="tasks"] .row-ops { width: auto; margin-left: auto; }
+  .row-ops .icon-btn { background: transparent; border-color: var(--hairline); }
+  /* 多键行（≥3 个键，或 2 个键里有文字按钮）：操作区整体落到第二行，
+     标题拿满第一行——长任务名/目标名不再被右侧键挤成每行三四字。
+     单键行（查看/打开/开始专注）保持右侧原位，不做无谓的第二行。 */
+  .row:has(.row-ops > :nth-child(3)),
+  .row:has(.row-ops .btn):has(.row-ops > :nth-child(2)) { flex-wrap: wrap; }
+  .row:has(.row-ops > :nth-child(3)) > .row-main,
+  .row:has(.row-ops .btn):has(.row-ops > :nth-child(2)) > .row-main { flex: 1 1 100%; }
+  .row:has(.row-ops > :nth-child(3)) > .row-ops,
+  .row:has(.row-ops .btn):has(.row-ops > :nth-child(2)) > .row-ops {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+  }
+  /* 目标卡底部那排独立操作键（直接挂在卡上、不在 .row 里）：同样左起折行，不摆右对齐的两列键盘 */
+  .card > .row-ops:has(> :nth-child(3)) { width: 100%; display: flex; justify-content: flex-start; }
+
+  /* 工具行里的下拉框和搜索框：桌面的 width:100% 会让每个控件独占一行，首屏就被筛选器占满 */
+  .btn-row > select,
+  .btn-row > input { width: auto; min-width: 0; flex: 1 1 138px; }
+
+  /* 只有短标签按钮禁止竖排折字；示例提问、恢复计划这类长文案必须能折行，
+     否则 nowrap 会把 min-content 顶成一整屏宽，整页出现横向滚动 */
+  .composer > .btn, .card-hero .row-ops .btn, .appbar-status, .sheet-actions .btn { white-space: nowrap; }
+  /* 高频键统一 44px 点击区（含状态三态片）：字号不动，只把能点的地方做大 */
+  .btn { min-height: 44px; padding: var(--sp-3) var(--sp-6); }
+  .btn-sm { min-height: 44px; padding: var(--sp-2) var(--sp-5); }
+  .icon-btn { width: 44px; height: 44px; border-radius: var(--r-xs); }
+  .pill { min-height: 44px; padding: var(--sp-2) var(--sp-6); }
+  .pill-sm { min-height: 44px; }
+  .empty, .hint { font-size: var(--fs-3); }
+  .note, .err, .warn-bar { font-size: var(--fs-3); }
+
+  .guide-card:not(.guide-compact) .btn-row .btn { flex: 1 1 100%; justify-content: center; }
+  .guide-compact .guide-actions .btn { flex: 0 1 auto; min-height: 40px; }
+
+  /* ---------- 次级参数折叠（手机端首屏只留主操作） ---------- */
+  .fold { margin-top: var(--sp-1); }
+  .fold > summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    min-height: 40px;
+    font-size: var(--fs-3);
+    color: var(--ink-soft);
+    cursor: pointer;
+    list-style: none;
+    border-top: 1px solid var(--hairline);
+    padding-top: var(--sp-4);
+  }
+  .fold > summary::-webkit-details-marker { display: none; }
+  .fold > summary:active .fold-lead, .fold > summary.xj-press .fold-lead { opacity: 0.65; }
+  /* 箭头跟在标题后面，不靠右：靠右时长摘要会把箭头挤到第二行 */
+  .fold-lead { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--ink); font-weight: 500; transition: opacity var(--t-press) var(--ease-out); }
+  .fold-lead::after {
+    content: "";
+    flex: 0 0 auto;
+    width: 7px; height: 7px;
+    border-right: 1.5px solid var(--ink-dim);
+    border-bottom: 1.5px solid var(--ink-dim);
+    transform: rotate(45deg);
+    transition: transform 0.18s ease;
+  }
+  .fold[open] > summary .fold-lead::after { transform: rotate(-135deg); }
+  .fold > summary .fold-now { color: var(--ink-dim); font-size: var(--fs-2); font-weight: 400; }
+  .fold-body { padding-top: var(--sp-2); }
+
+  /* ---------- 表单 ---------- */
+  .field { margin-bottom: var(--sp-5); }
+  .field > label { font-size: var(--fs-3); }
+  input, select, textarea { font-size: var(--fs-6); padding: var(--sp-3) var(--sp-4); min-height: 44px; }
+  .field-row { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: var(--sp-4); }
+  /* 带长选项文案的下拉框（今天起 7 天 / 拆成不超过 45 分钟）两列会被箭头截断，手机端一行一个 */
+  .field-row-wide { grid-template-columns: 1fr; }
+
+  /* ---------- 弹层：底部抽屉 ---------- */
+  .mask {
+    place-items: end center;
+    padding: 0 0 calc(var(--vh, 100vh) - var(--vv-h, 100vh));
+  }
+  .sheet, .sheet.wide {
+    width: 100%;
+    max-width: none;
+    max-height: calc(var(--vv-h, 100vh) - 10px);
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    padding: 6px var(--pad-x) calc(14px + var(--safe-b) + var(--host-keep));
+    box-shadow: var(--shadow-drawer);
+    animation: xj-sheet-up var(--t-in) var(--ease-out);
+  }
+  @keyframes xj-sheet-up { from { transform: translateY(26px); opacity: 0.25; } to { transform: none; opacity: 1; } }
+  .sheet h3 { font-size: var(--fs-7); margin-bottom: var(--sp-5); }
+  /* 抽屉拉手：原来是 .sheet::before 画的一条纯装饰，现在换成真实节点——
+     要跟手下滑关闭，就得有一条接得住触摸的横条。js/ui.js 只在窄屏且可关闭的抽屉上建它。 */
+  .sheet-grip {
+    display: block;
+    position: relative;
+    width: calc(100% + 2 * var(--pad-x));
+    height: 26px;
+    margin: -4px calc(-1 * var(--pad-x)) 6px;
+    padding: 0;
+    border: 0;
+    background: none;
+    /* 这条带上的滑动归 JS，不让浏览器顺手把它当页面滚动 */
+    touch-action: none;
+    cursor: grab;
+  }
+  .sheet-grip::after {
+    content: "";
+    position: absolute;
+    left: 50%; top: 10px;
+    width: 42px; height: 4px;
+    transform: translateX(-50%);
+    border-radius: var(--r-pill);
+    background: var(--on-press);
+    transition: background var(--t-lift) ease, width var(--t-lift) ease;
+  }
+  /* 手指压在带上时那条加宽变亮：告诉人「这里可以拽」，不用先知道有手势 */
+  .sheet.dragging .sheet-grip::after { background: var(--grip); width: 54px; }
+  .sheet.dragging { transition: none; }
+  /* 甩出去的那一路：先播退场再摘节点。按钮点 close 仍然立刻摘掉——
+     脚本与 flows 断言按「点完就没了」检查，不能把那条路改成延迟的。 */
+  .sheet.xj-flick-down { animation: xj-sheet-down 170ms ease-in forwards; }
+  @keyframes xj-sheet-down { to { transform: translateY(100%); opacity: 0.2; } }
+  .mask.xj-mask-out { animation: xj-mask-out 170ms ease-in forwards; }
+  @keyframes xj-mask-out { to { opacity: 0; } }
+  .sheet-actions { margin-top: var(--sp-6); gap: var(--sp-3); }
+  .sheet-actions .btn { flex: 1 1 100%; justify-content: center; }
+  .sheet-actions .spacer { display: none; }
+  .reblock-proposal .sheet-actions { justify-content: flex-start; }
+  .reblock-proposal .sheet-actions > .btn { min-height: 44px; flex: 0 1 auto; }
+  .reblock-proposal .sheet-actions > .btn-primary { flex: 1 1 148px; }
+  .reblock-count { flex-basis: 100%; }
+  .check-list { max-height: min(46vh, 320px); padding: var(--sp-1) var(--sp-4); }
+  .check-row { padding: var(--sp-3) 0; }
+  .check-row input[type="checkbox"] { margin-top: var(--sp-0); }
+  /* 窄屏上右侧值很长，flex 会把左侧标签压到换行，出现「App 内提 / 醒」这种断法 */
+  .kv { align-items: baseline; }
+  .kv b { flex: 0 0 auto; white-space: nowrap; }
+  .kv span { flex: 1 1 0; min-width: 0; }
+
+  /* 使用须知：手机上条目多，缩进和字号收到能一眼扫完的程度 */
+  .notice { gap: var(--sp-6); }
+  .notice-sec h4 { font-size: var(--fs-5); }
+  .notice-sec ul { padding-left: var(--sp-6); font-size: var(--fs-3); line-height: 1.75; }
+  /* 手机弹层左右内距是 --pad-x，钉底的确认条要跟着撑到边，安全区也一并留出来 */
+  .notice-sheet .sheet-actions {
+    margin: var(--pin-gap) calc(-1 * var(--pad-x) - var(--safe-r)) 0 calc(-1 * var(--pad-x) - var(--safe-l));
+    padding: 11px calc(var(--pad-x) + var(--safe-r)) calc(11px + var(--safe-b) + var(--host-keep)) calc(var(--pad-x) + var(--safe-l));
+  }
+  /* 门禁的两个选择并排，别为了堆叠多占一屏的三分之一 */
+  .notice-sheet .sheet-actions .btn { flex: 1 1 0; }
+
+  /* 状态抽屉：标签一列、内容一列，长解释单独占一行 */
+  .status-rows .kv {
+    display: grid;
+    grid-template-columns: 5.5em minmax(0, 1fr);
+    column-gap: var(--sp-4);
+    padding: var(--sp-3) 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .status-rows .kv .hint { grid-column: 1 / -1; margin: var(--sp-0) 0 0; }
+  .status-rows .kv span { text-align: left; }
+
+  /* 「更多」抽屉 */
+  .more-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-4); }
+  .more-item {
+    appearance: none;
+    font: inherit;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
+    min-height: 74px;
+    padding: var(--sp-5) var(--sp-5);
+    border-radius: var(--r-md);
+    border: 1px solid var(--hairline);
+    background: var(--on-fill);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background var(--t-lift) ease, border-color var(--t-lift) ease, transform var(--t-press) var(--ease-out);
+  }
+  .more-item:active, .more-item.xj-press { background: var(--on-line); transform: scale(0.97); transition-duration: 50ms; }
+  .more-item[aria-current="page"] { border-color: var(--brand-edge); background: var(--brand-tint); }
+  /* 抽屉里的十个入口逐颗浮上来（封顶 140ms）：一次摊开比整块硬邦邦地拍出来好读，
+     也不用等人——最慢那颗也在动画总时长内就位。 */
+  .more-item { animation: xj-pop-in var(--t-in) var(--ease-out) backwards; }
+  @keyframes xj-pop-in { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
+  .more-grid .more-item:nth-child(2) { animation-delay: 30ms; }
+  .more-grid .more-item:nth-child(3) { animation-delay: 55ms; }
+  .more-grid .more-item:nth-child(4) { animation-delay: 80ms; }
+  .more-grid .more-item:nth-child(n+5) { animation-delay: 105ms; }
+  .more-grid .more-item:nth-child(n+8) { animation-delay: 130ms; }
+  .more-ico { color: var(--ink-cool); margin-bottom: var(--sp-0); position: relative; }
+  .more-item b { font-size: var(--fs-5); }
+  .more-item small { color: var(--ink-dim); font-size: var(--fs-2); line-height: 1.4; }
+
+  /* ---------- toast：顶部提示条，不压底部标签栏 ---------- */
+  .toast-stack {
+    left: calc(var(--pad-x) + var(--safe-l));
+    right: calc(var(--pad-x) + var(--safe-r));
+    top: calc(var(--appbar-h) + var(--safe-t) + 8px);
+    bottom: auto;
+    max-width: none;
+  }
+  .toast { font-size: var(--fs-4); padding: var(--sp-4) var(--sp-5); }
+  .toast[data-brief] {
+    align-self: center; max-width: 100%;
+    padding: var(--sp-2) var(--sp-3); font-size: var(--fs-3); line-height: 1.35;
+  }
+  .toast[data-brief] b, .toast[data-brief] div { display: inline; }
+  .toast[data-brief] b + div { margin-inline-start: var(--sp-2); }
+  .saved-plans { scroll-margin-top: calc(var(--appbar-h) + var(--safe-t) + var(--sp-3)); }
+  /* 手机端提示条钉在顶上，进出场方向要跟着翻过来：从下面冒会跟标签栏打架 */
+  .toast { animation-name: xj-toast-in-top; }
+  .toast.xj-out { animation-name: xj-toast-out-top; }
+  @keyframes xj-toast-in-top { from { opacity: 0; transform: translateY(-8px) scale(0.985); } to { opacity: 1; transform: none; } }
+  @keyframes xj-toast-out-top { to { opacity: 0; transform: translateY(-6px); } }
+
+  /* ---------- 课程表 ---------- */
+  .view:is([data-page="timetable"], [data-page="review"]) > .page-head { display: none; }
+  .tt-toolbar { gap: var(--sp-2) var(--sp-3); }
+  .tt-compact-week { display: grid; align-items: center; grid-template-columns: 44px minmax(0, 1fr) 44px auto; gap: var(--sp-1); }
+  .tt-compact-week .tt-week-nav { width: 44px; min-height: 44px; padding: 0; }
+  .tt-compact-week .tt-add-course { min-height: 44px; padding-inline: var(--sp-3); white-space: nowrap; }
+  .tt-week-nav[data-week-shift="-1"] .ico { transform: rotate(180deg); }
+  .tt-compact-date { display: grid; text-align: center; color: var(--ink-soft); font-size: var(--fs-2); line-height: 1.35; }
+  .tt-compact-date .tt-week-label { min-width: 0; color: var(--ink); font-size: var(--fs-4); }
+  .tt-jump { display: flex; justify-content: flex-end; }
+  .tt-today-empty { margin: var(--sp-3) 0 0; color: var(--ink-soft); font-size: var(--fs-3); }
+  .tt-mobile-card .tt-tools { margin-bottom: var(--sp-2); }
+  .tt-mobile-card .fold > summary { min-height: 44px; }
+  .tt-mobile-card .tt-term { flex-wrap: wrap; }
+  .tt-axis { margin-left: 0; font-size: var(--fs-2); gap: var(--sp-2); }
+  .tt-axis select { width: 90px; min-height: 38px; flex: 0 0 auto; }
+  .tt-term { width: auto; margin-left: 0; gap: var(--sp-2); font-size: var(--fs-2); }
+  .tt-term input { width: 140px; min-height: 38px; }
+  .tt-grid {
+    grid-template-columns: 46px repeat(7, minmax(84px, 1fr));
+    /* 46 + 7×84 = 634，比桌面的 780 窄：轨道合计仍大于盒宽时超出部分交给 .tt-wrap 横向滚动 */
+    min-width: max(100%, 634px);
+    /* clip 保留圆角裁剪，但不建立另一个滚动容器，时间轴才能跟随外层固定。 */
+    overflow: clip;
+  }
+  .tt-corner, .tt-hours { position: sticky; left: 0; z-index: 3; background: var(--surface-card); }
+  .tt-course { padding: var(--sp-0) var(--sp-1); }
+  .tt-course b { font-size: var(--fs-2); }
+  .tt-course span { font-size: var(--fs-1); }
+
+  /* 今日课程可展开成正文字号的列表，点行直达详情。 */
+  .tt-today-row {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    width: 100%;
+    min-height: 48px;
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-2);
+    border: 1px solid var(--line-soft);
+    border-left: 3px solid var(--brand);
+    border-radius: var(--r-sm);
+    background: var(--on-fill);
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--t-lift) ease, transform var(--t-press) var(--ease-out);
+  }
+  .tt-today-row:active, .tt-today-row.xj-press { background: var(--on-press); transform: scale(0.99); transition-duration: 50ms; }
+  /* 已结束的行压暗但保住对比度：0.55 在浅色档会把 15px 文字拉到约 3.2:1，0.75 两档都 ≥6:1 */
+  .tt-today-row.past { opacity: 0.75; }
+  .tt-today-row.now { background: var(--ok-tint); }
+  .tt-today-time { flex: 0 0 auto; font-size: var(--fs-4); font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+  .tt-today-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-0); }
+  .tt-today-main b { font-size: var(--fs-5); overflow-wrap: anywhere; }
+  .tt-today-loc { font-size: var(--fs-3); color: var(--ink-dim); }
+
+  /* ---------- 日历 ---------- */
+  .cal-toolbar { gap: var(--sp-2) var(--sp-3); }
+  .cal-month { flex: 1 1 auto; font-size: var(--fs-5); }
+  .cal-grid { gap: var(--sp-1); }
+  .cal-cell { min-height: 54px; padding: var(--sp-1) var(--sp-1); border-radius: var(--r-xs); }
+  .cal-date { font-size: var(--fs-2); }
+  /* 390px 宽分给 7 列，每列只剩约 46px：文字标签会被裁成「08:…」读不出来。
+     这里改成按类着色的短条，配合上方的「课程/计划/任务」图例，点日期在下方看完整安排。 */
+  .cal-chip { height: 5px; padding: 0; font-size: 0; border-left: 0; border-radius: var(--r-xs); overflow: hidden; }
+  .cal-toolbar .cal-chip { height: auto; padding: 1px var(--sp-1); font-size: var(--fs-1); }
+  .cal-more { font-size: 0; }
+  .cal-more::after { content: '+' attr(data-count); font-size: var(--fs-0); }
+
+  /* ---------- 计划 / 复盘 ---------- */
+  .plan-slot { padding: var(--sp-5) 0; }
+  .view[data-page="planner"] .plan-slot { display: block; }
+  .view[data-page="planner"] .plan-time { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-3); }
+  .view[data-page="planner"] .plan-time .hint { margin: 0; }
+  .saved-plan > .btn { flex: 0 0 auto; white-space: nowrap; }
+  .plan-time { min-width: 62px; font-size: var(--fs-3); }
+  .bar-row { grid-template-columns: 46px minmax(0, 1fr) 56px; font-size: var(--fs-2); }
+  .bar-sm { grid-template-columns: 66px minmax(0, 1fr) 88px; }
+  .wk-row { grid-template-columns: 50px 38px minmax(0, 1fr); font-size: var(--fs-2); }
+  .wk-plan { grid-column: 1 / -1; }
+
+  /* ---------- 专注 ---------- */
+  /* .focus-time 在手机上只出现在专注环环心与全屏倒计时里，
+     两者的字号都由 styles.css 的 .focus-dial / .focus-overlay 规则决定（选择器更具体），
+     这里原来另写的一档 clamp 是永远命中不到的第三套数，已删。 */
+  .focus-time { letter-spacing: 1px; }
+  .focus-presets { gap: var(--sp-3); }
+
+  /* ---------- AI 对话 ---------- */
+  /* 新对话把示例和输入框放在一起。有消息时给对话留出可滚动的空间。 */
+  .chat-screen { height: calc(100dvh - 187px); }
+  .chat-screen.chat-new {
+    height: auto;
+    padding: var(--sp-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface-card);
+  }
+  .chat-new > .thread { flex: 0 1 auto; padding: 0; }
+  .chat-new .chat-head { flex: 0 0 auto; margin-bottom: var(--sp-4); }
+  .chat-new .chat-empty { width: 100%; max-width: none; margin: 0; padding: var(--sp-2) 0; }
+  .chat-new .chat-welcome > h2 {
+    display: block;
+    margin: 0 0 var(--sp-2);
+    font-size: var(--fs-6);
+    line-height: 1.35;
+  }
+  .chat-new > .chat-bottom {
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--hairline);
+  }
+  .chat-new .chat-composer { margin: 0; }
+  /* 两个助手并排，角色另起一行；桌面的「名字（角色）」长标签在窄屏会各占一行 */
+  .agent-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+  .agent-switch .pill {
+    white-space: normal;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
+    min-height: 54px;
+    padding: var(--sp-4) var(--sp-5);
+    text-align: left;
+  }
+  .agent-switch .pill b { font-size: var(--fs-5); font-weight: 600; }
+  .agent-switch .pill small { font-size: var(--fs-2); opacity: .8; line-height: 1.4; }
+  .agent-switch > .btn { grid-column: 1 / -1; justify-content: center; }
+  .thread {
+    max-height: clamp(190px, calc(var(--vv-h, 100vh) - 420px), 56vh);
+  }
+  .chat-agent { padding-inline: var(--sp-3); }
+  .msg { max-width: 92%; font-size: var(--fs-6); padding: var(--sp-5) var(--sp-5); }
+  .composer { margin-top: var(--sp-4); }
+  .composer textarea { min-height: 46px; font-size: var(--fs-6); }
+  /* 「发送」是两个字，被压窄时会竖排；给它固定宽度，让输入框去吃剩余空间 */
+  .composer > .btn { flex: 0 0 auto; }
+  .ctx-json { font-size: var(--fs-1); max-height: 200px; }
+
+  /* ---------- 设置 ---------- */
+  .set-group { margin-bottom: var(--sp-6); }
+  .kv { padding: var(--sp-3) 0; font-size: var(--fs-3); }
+  .kv span { text-align: right; overflow-wrap: anywhere; }
+}
+
+/* 横屏手机：可视高只剩 300 出头，先把标签栏压扁，对话区按可视高给尺寸 */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+  :root { --tabbar-h: 44px; --appbar-h: 42px; }
+  .nav-item { flex-direction: row; gap: var(--sp-2); font-size: var(--fs-2); }
+  .nav-ico { width: auto; height: auto; }
+  .thread { max-height: min(46vh, 240px); }
+  .card-hero .row-title { font-size: var(--fs-5); }
+}
+
+  /* 大字号下卡片头：标题与规则署名允许换行，署名落到下一行，不把标题挤成竖排 */
+  .card > .btn-row:has(> h3) { flex-wrap: wrap; row-gap: var(--sp-2); }
+  .card > .btn-row:has(> h3) > .spacer { display: none; }
+  .card > .btn-row:has(> h3) > h3 { flex: 1 1 auto; min-width: 0; }
+
+  /* AI 输入条在手机上跟着正文走，不被旧的 .composer textarea 规则顶大 */
+  .chat-input textarea { min-height: 0; font-size: var(--fs-5); }
+  .chat-send { min-height: 44px; }
+
+  /* 软键盘弹出时底栏会夹在输入条和键盘之间：收起底栏，对话区顶到键盘上沿 */
+  html.kb-open .side { display: none; }
+  html.kb-open .chat-screen { height: calc(100dvh - 102px); }
+  html.kb-open .chat-screen.chat-new {
+    height: auto;
+    max-height: max(0px, calc(var(--vv-h, 100dvh) - 102px));
+  }
